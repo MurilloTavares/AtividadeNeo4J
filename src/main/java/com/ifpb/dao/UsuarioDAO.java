@@ -7,8 +7,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema;
 
 public class UsuarioDAO {
 
@@ -25,23 +23,38 @@ public class UsuarioDAO {
         db.shutdown();
     }
 
-    public Node getNode(String email) {
+    private Node getNode(String email) {
         Node node = db.findNode(LABEL, "email", email);
         return node;
+    }
+
+    private Node userToNode(Usuario user) {
+        Node node = db.createNode(LABEL);
+        node.setProperty("email", user.getEmail());
+        node.setProperty("nome", user.getNome());
+        node.setProperty("idade", user.getIdade());
+
+        return node;
+    }
+
+    private Usuario nodeToUser(Node node) {
+        Usuario user = new Usuario();
+        user.setEmail((String) node.getProperty("email"));
+        user.setNome((String) node.getProperty("nome"));
+        user.setIdade((Integer) node.getProperty("idade"));
+
+        return user;
     }
 
     public void salvar(Usuario u) throws Exception {
         try (Transaction transaction = db.beginTx()) {
 
             Node busca = getNode(u.getEmail());
-            if (busca != null){
+            if (busca != null) {
                 throw new Exception("Já existe um usuário com o email " + u.getEmail());
             }
-            
-            Node node = db.createNode(LABEL);
-            node.setProperty("email", u.getEmail());
-            node.setProperty("nome", u.getNome());
-            node.setProperty("idade", u.getIdade());
+
+            userToNode(u);
 
             transaction.success();
         }
@@ -56,10 +69,7 @@ public class UsuarioDAO {
                 return u;
             }
 
-            u = new Usuario();
-            u.setEmail((String) result.getProperty("email"));
-            u.setNome((String) result.getProperty("nome"));
-            u.setIdade((Integer) result.getProperty("idade"));
+            u = nodeToUser(result);
 
             return u;
         }
@@ -68,10 +78,10 @@ public class UsuarioDAO {
     public void atualizar(String email, Usuario u) throws Exception {
         try (Transaction transaction = db.beginTx()) {
             Node result = getNode(email);
-            if(result == null){
-                throw new Exception("Email "+email+" nao encontrado");
+            if (result == null) {
+                throw new Exception("Email " + email + " nao encontrado");
             }
-            
+
             result.setProperty("email", u.getEmail());
             result.setProperty("nome", u.getNome());
             result.setProperty("idade", u.getIdade());
@@ -83,10 +93,10 @@ public class UsuarioDAO {
     public void deletar(String email) {
         try (Transaction transaction = db.beginTx()) {
             Node node = getNode(email);
-            
-            if(node != null){                
+
+            if (node != null) {
                 node.delete();
-            }            
+            }
 
             transaction.success();
         }
