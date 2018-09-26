@@ -1,42 +1,79 @@
 package com.ifpb.view;
 
+import com.ifpb.dao.RelacionamentoDAO;
 import com.ifpb.dao.UsuarioDAO;
 import com.ifpb.model.Usuario;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class App {
     
     public static void main(String[] args){
+                
+        // --- Usuario CRUD ---
+        UsuarioDAO uDao = new UsuarioDAO();
+        uDao.start();
+        
+        System.out.println("\nSalvando Usuarios ...");   
         
         Usuario joao = new Usuario("joao@email.com", "Joao", 20);
+        try { uDao.salvar(joao); }
+        catch (Exception ex) { System.out.println(ex.getMessage()); }        
+        
         Usuario maria = new Usuario("maria@email.com", "Maria", 30);
-        
-        UsuarioDAO dao = new UsuarioDAO();
-        dao.start();
-        
-        System.out.println("\nSalvando Joao e Maria ...");
-        try { dao.salvar(joao); }
+        try { uDao.salvar(maria); }
         catch (Exception ex) { System.out.println(ex.getMessage()); }
         
-        try { dao.salvar(maria); }
+        Usuario ana = new Usuario("ana@email.com", "Ana", 30);
+        try { uDao.salvar(ana); }
+        catch (Exception ex) { System.out.println(ex.getMessage()); }
+        
+        Usuario joaquim = new Usuario("joaquim@email.com", "Joaquim", 25);
+        try { uDao.salvar(joaquim); }
+        catch (Exception ex) { System.out.println(ex.getMessage()); }
+        
+        Usuario carlos = new Usuario("carlos@email.com", "Carlos", 20);
+        try { uDao.salvar(carlos); }
         catch (Exception ex) { System.out.println(ex.getMessage()); }
         
         
         System.out.println("\nAtualizando Maria ...");
         maria.setNome("Maria Lucia");
-        try { dao.atualizar(maria.getEmail(), maria); }
+        try { uDao.atualizar(maria.getEmail(), maria); }
         catch (Exception ex) { System.out.println(ex.getMessage()); }
         
         System.out.println("\n---Buscando Joao e Maria---");
-        System.out.println(dao.buscar("joao@email.com"));
-        System.out.println(dao.buscar("maria@email.com"));
+        System.out.println(uDao.buscar("joao@email.com"));
+        System.out.println(uDao.buscar("maria@email.com"));
         
-        dao.deletar(maria.getEmail());
-        maria = dao.buscar(maria.getEmail());
+        uDao.deletar(maria.getEmail());
+        maria = uDao.buscar(maria.getEmail());
         
         System.out.println("\n---Buscando Maria após deleção---");
-        System.out.println(maria);        
+        System.out.println(maria);
+        
+        uDao.shutdown();
+
+        // --- Criando e Buscando Amizades ---        
+        RelacionamentoDAO rDao = new RelacionamentoDAO();
+        rDao.start();
+        System.out.println("\nCriando amizades ...");
+        
+        rDao.criarAmizade(joao, ana);
+        rDao.criarAmizade(joao, carlos);
+        rDao.criarAmizade(ana, joaquim);
+        
+        System.out.println("\n---Buscando amigos de Joao---");
+        for(Usuario amigo: rDao.buscarAmigos(joao)){
+            System.out.println(amigo.getNome());
+        }
+        
+        System.out.println("\n---Buscando amigos de amigos de Joao---");
+        for(Usuario amigo: rDao.buscarAmigos(joao)){
+            for(Usuario amigoDeAmigo: rDao.buscarAmigos(amigo)){
+                System.out.println(amigoDeAmigo.getNome());
+            }
+        }
+        
+        rDao.shutdown();
         
     }
     
