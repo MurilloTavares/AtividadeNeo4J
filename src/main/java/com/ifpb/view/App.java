@@ -1,7 +1,9 @@
 package com.ifpb.view;
 
+import com.ifpb.dao.PublicacaoDAO;
 import com.ifpb.dao.RelacionamentoDAO;
 import com.ifpb.dao.UsuarioDAO;
+import com.ifpb.model.Publicacao;
 import com.ifpb.model.Usuario;
 
 public class App {
@@ -74,6 +76,23 @@ public class App {
         }
         
         rDao.shutdown();
+        
+        //--- Criando e buscando publicacoes ---
+        PublicacaoDAO pDao = new PublicacaoDAO();
+        pDao.start();
+        System.out.println("\nCriando publicacoes ...");
+        Publicacao pubA = new Publicacao("Publicacao A", "Conteudo da publicação A.");
+        Publicacao pubB = new Publicacao("Publicacao B", "Conteudo da publicacao B.");
+        
+        pDao.criarPublicacao(joao, pubA);
+        pDao.criarPublicacao(joao, pubB);
+        
+        System.out.println("\n---Buscando publicacoes de Joao---");
+        for(Publicacao pub: pDao.buscarPublicacoes(joao)){
+            System.out.println(pub);
+        }
+        
+        pDao.shutdown();
         
     }
     

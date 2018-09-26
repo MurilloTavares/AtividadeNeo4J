@@ -14,10 +14,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
-public class RelacionamentoDAO {
-    
+public class PublicacaoDAO {
     private final File DB_FILE = new File("redeSocial.db");
-    private final Label LABEL = Label.label("user");
+    private final Label USER_LABEL = Label.label("user");    
+    private final Label PUB_LABEL = Label.label("publicacao");
 
     GraphDatabaseService db;
 
@@ -29,16 +29,29 @@ public class RelacionamentoDAO {
         db.shutdown();
     }
 
-    private Node getNode(String email) {
-        Node node = db.findNode(LABEL, "email", email);
+    private Node getUser(String email) {
+        Node node = db.findNode(USER_LABEL, "email", email);
         return node;
     }
 
+    private Node getPub(String titulo){
+        Node node = db.findNode(PUB_LABEL, "titulo", titulo);
+        return node;
+    }
+    
     private Node userToNode(Usuario user) {
-        Node node = db.createNode(LABEL);
+        Node node = db.createNode(USER_LABEL);
         node.setProperty("email", user.getEmail());
         node.setProperty("nome", user.getNome());
         node.setProperty("idade", user.getIdade());
+
+        return node;
+    }
+    
+    private Node pubToNode(Publicacao pub) {
+        Node node = db.createNode(PUB_LABEL);
+        node.setProperty("titulo", pub.getTitulo());
+        node.setProperty("conteudo", pub.getConteudo());
 
         return node;
     }
@@ -52,43 +65,43 @@ public class RelacionamentoDAO {
         return user;
     }
     
-    private void criarRelacionamento(Usuario user, Relacionamentos rel, Usuario destino){
-        try (Transaction transaction = db.beginTx()) {
-            Node nodeUser = getNode(user.getEmail());
-            Node nodeDestino = getNode(destino.getEmail());
-            
-            Relationship relationship = nodeUser.createRelationshipTo(nodeDestino, rel);
-            relationship.setProperty("desde", LocalDate.now());
+    private Publicacao nodeToPub(Node node) {
+        Publicacao pub = new Publicacao();
+        pub.setTitulo((String) node.getProperty("titulo"));
+        pub.setConteudo((String) node.getProperty("conteudo"));
 
+        return pub;
+    }
+    
+    public void criarPublicacao(Usuario user, Publicacao pub){
+        try (Transaction transaction = db.beginTx()){
+            Node publicacao = pubToNode(pub);
+            Node usuario = getUser(user.getEmail());
+            
+            Relationship relationship = usuario
+                    .createRelationshipTo(publicacao, Relacionamentos.PUBLICA);            
+            relationship.setProperty("desde", LocalDate.now());
+            
             transaction.success();
         }
     }
-    
-    public void criarAmizade(Usuario user, Usuario amigo){
-        criarRelacionamento(user, Relacionamentos.AMIGO, amigo);
-    }
-    
-    public void criarSeguir(Usuario user, Usuario seguido){
-        criarRelacionamento(user, Relacionamentos.SEGUE, seguido);
-    }
       
-    public ArrayList<Usuario> buscarAmigos(Usuario user){        
-        ArrayList<Usuario> amigos = new ArrayList<>();
+    public ArrayList<Publicacao> buscarPublicacoes(Usuario user){        
+        ArrayList<Publicacao> pubs = new ArrayList<>();
         
         try (Transaction transaction = db.beginTx()) {
         
-            Node node = getNode(user.getEmail());            
+            Node node = getUser(user.getEmail());            
             Iterable<Relationship> relacionamentos = node
-                    .getRelationships(Relacionamentos.AMIGO, Direction.OUTGOING);
+                    .getRelationships(Relacionamentos.PUBLICA, Direction.OUTGOING);
             
             for(Relationship rel : relacionamentos){
-                Usuario amigo = nodeToUser(rel.getEndNode());
-                amigos.add(amigo);
+                Publicacao pub = nodeToPub(rel.getEndNode());
+                pubs.add(pub);
             }
             
             transaction.success();
         }
-        return amigos;
+        return pubs;
     }
-    
 }
